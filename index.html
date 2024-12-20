@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sunny's Music Player</title>
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(145deg, #2c003e, #0a001d);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .music-player {
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 20px;
+      padding: 20px;
+      width: 400px;
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+
+    .music-player h1 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+
+    /* Music disk styling */
+    .artwork {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background-color: black;
+      margin-bottom: 20px;
+      display: flex;
+      border: 2px dotted white;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      animation: rotateDisk 5s linear infinite; /* Rotate animation */
+    }
+
+    .artwork:before {
+      content: '';
+      width: 60px;
+      height: 60px;
+      background-color: gray;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    /* Animation for rotating disk */
+    @keyframes rotateDisk {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .playlist {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 10px;
+      margin: 15px 0;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .playlist li {
+      list-style: none;
+      padding: 8px 10px;
+      margin: 5px 0;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .playlist li:hover {
+      background: #2c003e;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .controls button {
+      background: #2c003e;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .controls button:hover {
+      transform: scale(1.1);
+    }
+
+    .controls .play {
+      font-size: 1.5rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 20px 0;
+    }
+
+    .extra-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .extra-controls button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .upload-btn {
+      margin-top: 15px;
+      background: #693cb2;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .upload-btn:hover {
+      background: #d2d5da;
+    }
+  </style>
+</head>
+<body>
+  <div class="music-player">
+    <h1>🎵 Advanced Music Player</h1>
+    <div class="artwork"></div> <!-- Music disk rotates here -->
+    <h2 id="song-title">No Song Selected</h2>
+    <p id="song-artist">Unknown Artist</p>
+
+    <div class="playlist">
+      <ul id="playlist">
+        <!-- Dynamic Playlist Items -->
+      </ul>
+    </div>
+
+    <input type="range" id="progress-bar" min="0" max="100" value="0">
+
+    <div class="controls">
+      <button id="prev-btn">⏮</button>
+      <button id="play-btn" class="play">▶️</button>
+      <button id="next-btn">⏭</button>
+    </div>
+
+    <div class="extra-controls">
+      <button id="shuffle-btn">🔀 Shuffle</button>
+      <button id="repeat-btn">🔁 Repeat</button>
+      <button id="volume-btn">🔊</button>
+    </div>
+
+    <input type="range" id="volume-control" min="0" max="1" step="0.01" value="0.8" hidden>
+
+    <button class="upload-btn" id="upload-btn">Upload Songs</button>
+    <input type="file" id="file-input" accept="audio/*" multiple hidden>
+  </div>
+
+  <script>
+    const playBtn = document.getElementById("play-btn");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const shuffleBtn = document.getElementById("shuffle-btn");
+    const repeatBtn = document.getElementById("repeat-btn");
+    const volumeBtn = document.getElementById("volume-btn");
+    const volumeControl = document.getElementById("volume-control");
+    const progressBar = document.getElementById("progress-bar");
+    const songTitle = document.getElementById("song-title");
+    const songArtist = document.getElementById("song-artist");
+    const playlistEl = document.getElementById("playlist");
+    const fileInput = document.getElementById("file-input");
+    const uploadBtn = document.getElementById("upload-btn");
+
+    let isPlaying = false;
+    let currentSongIndex = 0;
+    let isShuffle = false;
+    let isRepeat = false;
+    let audio = new Audio();
+    
+    let songs = [];
+
+    function playSong() {
+      if (!songs.length) return;
+      audio.play();
+      isPlaying = true;
+      playBtn.textContent = "⏸️";
+    }
+
+    function pauseSong() {
+      audio.pause();
+      isPlaying = false;
+      playBtn.textContent = "▶️";
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        pauseSong();
+      } else {
+        playSong();
+      }
+    }
+
+    function loadSong(song) {
+      audio.src = song.url;
+      songTitle.textContent = song.title;
+      songArtist.textContent = song.artist || "Unknown Artist";
+    }
+
+    function nextSong() {
+      if (isShuffle) {
+        currentSongIndex = Math.floor(Math.random() * songs.length);
+      } else {
+        currentSongIndex = (currentSongIndex + 1) % songs.length;
+      }
+      loadSong(songs[currentSongIndex]);
+      playSong();
+    }
+
+    function prevSong() {
+      currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+      loadSong(songs[currentSongIndex]);
+      playSong();
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      shuffleBtn.textContent = isShuffle ? "🔁 Shuffle" : "🔀 Shuffle";
+    }
+
+    function toggleRepeat() {
+      isRepeat = !isRepeat;
+      repeatBtn.textContent = isRepeat ? "🔂 Repeat" : "🔁 Repeat";
+    }
+
+    function toggleVolume() {
+      volumeControl.hidden = !volumeControl.hidden;
+    }
+
+    function changeVolume() {
+      audio.volume = volumeControl.value;
+    }
+
+    playBtn.addEventListener("click", togglePlayPause);
+    prevBtn.addEventListener("click", prevSong);
+    nextBtn.addEventListener("click", nextSong);
+    shuffleBtn.addEventListener("click", toggleShuffle);
+    repeatBtn.addEventListener("click", toggleRepeat);
+    volumeBtn.addEventListener("click", toggleVolume);
+    volumeControl.addEventListener("input", changeVolume);
+
+    fileInput.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files);
+      songs = files.map(file => ({
+        title: file.name,
+        url: URL.createObjectURL(file),
+        artist: "Unknown Artist"
+      }));
+      loadSong(songs[0]);
+      updatePlaylist();
+    });
+
+    function updatePlaylist() {
+      playlistEl.innerHTML = "";
+      songs.forEach((song, index) => {
+        const li = document.createElement("li");
+        li.textContent = song.title;
+        li.addEventListener("click", () => {
+          currentSongIndex = index;
+          loadSong(songs[currentSongIndex]);
+          playSong();
+        });
+        playlistEl.appendChild(li);
+      });
+    }
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    loadSong(songs[0] || {});
+    </script>
+</body>
+</html>
